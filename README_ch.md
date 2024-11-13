@@ -51,6 +51,30 @@ git clone https://github.com/Beichen-Hg/CV-project.git
 cd CV-project
 ```
 2. 您需要将"frontend"和"backend"两个文件夹下载存放到同一个根目录下，否则前端代码无法正常执行！
+3. 此外，您**必须**在**项目根目录**及**backend目录**下分别创建一个名为"uploads"的文件夹用于临时存放上传的图片！
+
+目录前三级结构应该如下图所示（node_modules文件夹会在环境设置部分生成）：
+```text
+project-root/
+├── frontend/
+│   ├── node_modules/
+│   ├── public/
+│   ├── src/
+│   ├── .gitignore
+│   ├── package.json
+│   └── package-lock.json
+├── backend/
+│   ├── CameraDetection/
+│   ├── ImageDetection/
+│   ├── uploads/
+│   ├── app.py
+│   ├── config.py
+│   └── utils.py
+├── uploads/
+├── README.md
+├── README_ch.md
+└── yolov8n.pt
+```
 
 ### 环境设置
 1. 前置组件：安装 JavaScript 环境 —— [Node.js](https://nodejs.org/)
