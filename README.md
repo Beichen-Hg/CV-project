@@ -27,8 +27,8 @@ This project provides a web-based application for real-time fruit detection and 
 
 ### Technical Architecture 
 - 🌐 Frontend Tech Stack 
-	- Built with React + TypeScript ensuring code type safety 
-	- Responsive design implemented using TailwindCSS 
+	- Built with React + JavaScript ensuring code type safety 
+	- Responsive design implemented using BootstrapCSS 
 	- Real-time camera feed capture and display 
 - 🛠️ Backend Tech Stack 
 	- RESTful API built with Python + Flask 
