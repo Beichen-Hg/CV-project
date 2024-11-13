@@ -50,8 +50,9 @@
 git clone https://github.com/Beichen-Hg/CV-project.git 
 cd CV-project
 ```
-2. 您需要将"frontend"和"backend"两个文件夹下载存放到同一个根目录下，否则前端代码无法正常执行！
-3. 此外，您**必须**在**项目根目录**及**backend目录**下分别创建一个名为"uploads"的文件夹用于临时存放上传的图片！
+2. 您需要将`frontend`和`backend`两个文件夹下载**存放到同一个根目录下**，否则前端代码无法正常执行！
+3. 您**必须**另外下载分支仓库`master`中的文件，并将`CameraDetection`文件夹存放在`backend`文件夹下
+4. 此外，您**必须**在项目根目录及`backend`目录下分别创建一个名为`uploads`的文件夹用于临时存放上传的图片！
 
 目录前三级结构应该如下图所示（node_modules文件夹会在环境设置部分生成）：
 ```text
