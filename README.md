@@ -45,12 +45,36 @@ This project provides a web-based application for real-time fruit detection and 
 	- Optimized model inference speed
 
 ## Installation
-1. Clone the repository: 
+1. Clone the repository:
 ```bash
 git clone https://github.com/Beichen-Hg/CV-project.git 
 cd CV-project
 ```
-2. You need to download and store the "frontend" and "backend" folders in the same root directory, otherwise the frontend code will not execute properly!
+2. You need to download and store both the "frontend" and "backend" folders in the same root directory, otherwise the frontend code will not execute properly!
+3. Additionally, you **must** create a folder named "uploads" in both the **project root directory** and the **backend directory** to temporarily store uploaded images!
+
+The first three levels of the directory structure should look like the following (the node_modules folder will be generated in the environment setup section):
+```text
+project-root/
+├── frontend/
+│   ├── node_modules/
+│   ├── public/
+│   ├── src/
+│   ├── .gitignore
+│   ├── package.json
+│   └── package-lock.json
+├── backend/
+│   ├── CameraDetection/
+│   ├── ImageDetection/
+│   ├── uploads/
+│   ├── app.py
+│   ├── config.py
+│   └── utils.py
+├── uploads/
+├── README.md
+├── README_ch.md
+└── yolov8n.pt
+```
 
 ### Environment Setup
 1. Prerequisites: Install JavaScript environment — [Node.js](https://nodejs.org/)
