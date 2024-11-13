@@ -13,14 +13,14 @@ import torchvision.models as models
 import torch.nn as nn
 from ultralytics import YOLO
 
-# 导入检测和分类模块
+# Import detection and classification modules
 from ImageDetection.pest_detection import detect_pests
 from ImageDetection.fruit_classfy import classify_fruit
 
 app = Flask(__name__)
-CORS(app)  # 允许跨域请求
+CORS(app)  # Allow cross-origin requests
 
-# 配置上传文件的存储路径
+# Configure the storage path for uploaded files
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -29,7 +29,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# 初始化摄像头检测所需的模型和变量
+# Initialize models and variables needed for camera detection
 yolo_model = None
 resnet_model = None
 preprocess = None
@@ -38,28 +38,29 @@ fruits = ['apple', 'avocado', 'banana', 'cherry', 'kiwi', 'Mango', 'orange', 'pi
 def init_camera_detection_models():
     global yolo_model, resnet_model, preprocess
     
-    # 加载YOLO模型
+    # Load YOLO model for object detection
     yolo_model = YOLO("yolov8n.pt")
     
-    # 加载ResNet模型
+    # Load ResNet model for fruit classification
     resnet_model = models.resnet50(weights=False)
     num_ftrs = resnet_model.fc.in_features
     resnet_model.fc = nn.Linear(num_ftrs, 10)
     
-    # 加载模型权重
+    # Load model weights
     current_dir = os.path.dirname(os.path.abspath(__file__))
     model_weights_path = os.path.join(current_dir, "CameraDetection/test_best_model_weights.pth")
     model_weights = torch.load(model_weights_path, map_location=torch.device('cpu'))
     resnet_model.load_state_dict(model_weights)
     resnet_model.eval()
     
-    # 定义预处理流程
+    # Set up image preprocessing pipeline
     preprocess = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
+# Check if the uploaded file extension is in the allowed list
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -67,27 +68,27 @@ def allowed_file(filename):
 def process_frame(frame):
     detection_results = []
     
-    # 使用YOLOv8进行检测
+    # Use YOLOv8 for detection
     results = yolo_model(frame, show=False)
     
-    # 处理检测结果
+    # Process detection results
     for result in results:
         boxes = result.boxes
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
             
-            # 裁剪并处理检测到的区域
+            # Crop and process the detected area
             crop_img = frame[y1:y2, x1:x2]
             crop_img = Image.fromarray(crop_img)
             input_tensor = preprocess(crop_img).unsqueeze(0)
             
-            # 使用ResNet进行分类
+            # Use ResNet for classification
             with torch.no_grad():
                 output = resnet_model(input_tensor)
                 pred = torch.argmax(output, dim=1).item()
             
-            # 添加检测结果
+            # Add detection result
             detection_results.append({
                 'bbox': [x1, y1, x2, y2],
                 'class': fruits[pred],
@@ -103,10 +104,10 @@ def gen_frames():
         if not success:
             break
         else:
-            # 获取检测结果
+            # Get detection results
             detection_results = process_frame(frame)
             
-            # 在图像上绘制检测结果
+            # Draw detection results on the image
             for detection in detection_results:
                 x1, y1, x2, y2 = detection['bbox']
                 label = f"Fruit: {detection['class']}"
@@ -119,7 +120,7 @@ def gen_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-# ImageDetection的API路由
+# API route for ImageDetection
 @app.route('/api/image-detection', methods=['POST'])
 def image_detection():
     try:
@@ -132,21 +133,21 @@ def image_detection():
             return jsonify({'error': 'No selected file'}), 400
         
         if file and allowed_file(file.filename):
-            # 保存文件
+            # Save file
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
             
-            # 进行害虫检测
+            # Perform pest detection
             pest_result = detect_pests(filepath)
             
-            # 进行水果分类
+            # Perform fruit classification
             fruit_result = classify_fruit(filepath)
             
-            # 删除临时文件
+            # Delete temporary file
             os.remove(filepath)
             
-            # 返回结果
+            # Return results
             return jsonify({
                 'success': True,
                 'pest_detection': pest_result,
@@ -165,7 +166,7 @@ def image_detection():
 def health_check():
     return jsonify({'status': 'healthy'}), 200
 
-# 摄像头检测路由
+# Camera detection route
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -178,16 +179,16 @@ def video_feed():
 @app.route('/api/camera-detection', methods=['POST'])
 def camera_detection():
     try:
-        # 从请求中获取base64编码的图像
+        # Get base64 encoded image from the request
         data = request.json
         image_data = data['frame'].split(',')[1]
         image_bytes = base64.b64decode(image_data)
         
-        # 转换为OpenCV格式
+        # Convert to OpenCV format
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # 处理图片并获取检测结果
+        # Process the image and get detection results
         detection_results = process_frame(frame)
         
         return jsonify({
@@ -204,20 +205,20 @@ def camera_detection():
 @app.route('/process_image', methods=['POST'])
 def process_image():
     try:
-        # 获取上传的图片数据
+        # Get uploaded image data
         image_data = request.json['image']
-        # 解码base64图片
+        # Decode base64 image
         image_data = image_data.split(',')[1]
         image_bytes = base64.b64decode(image_data)
         
-        # 转换为OpenCV格式
+        # Convert to OpenCV format
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # 获取检测结果
+        # Get detection results
         detection_results = process_frame(frame)
         
-        # 在图像上绘制检测结果
+        # Draw detection results on the image
         for detection in detection_results:
             x1, y1, x2, y2 = detection['bbox']
             label = f"Fruit: {detection['class']}"
@@ -225,7 +226,7 @@ def process_image():
             cv2.putText(frame, label, (x1, y1 - 10),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         
-        # 转换回base64格式
+        # Convert back to base64 format
         _, buffer = cv2.imencode('.jpg', frame)
         processed_image = base64.b64encode(buffer).decode('utf-8')
         
@@ -235,5 +236,5 @@ def process_image():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    init_camera_detection_models()  # 初始化摄像头检测模型
+    init_camera_detection_models()  # Initialize camera detection models
     app.run(debug=True, port=5000)
