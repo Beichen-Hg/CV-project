@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fruit Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .camera-feed {
+            max-width: 800px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">Fruit Detection System</h1>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h2 class="text-xl font-semibold mb-4">Live Camera Feed</h2>
+            <div class="camera-feed mx-auto">
+                <img src="{{ url_for('video_feed') }}" class="w-full rounded-lg">
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold mb-4">Image Upload</h2>
+            <div class="space-y-4">
+                <input type="file" accept="image/*" id="imageInput" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100">
+                <div id="imagePreview" class="mt-4">
+                    <img id="originalImage" class="hidden max-w-full h-auto rounded-lg mb-4">
+                    <img id="processedImage" class="hidden max-w-full h-auto rounded-lg">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 显示原始图片
+                    const originalImage = document.getElementById('originalImage');
+                    originalImage.src = e.target.result;
+                    originalImage.classList.remove('hidden');
+
+                    // 发送图片到服务器处理
+                    fetch('/process_image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            image: e.target.result
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // 显示处理后的图片
+                        const processedImage = document.getElementById('processedImage');
+                        processedImage.src = data.processed_image;
+                        processedImage.classList.remove('hidden');
+                    })
+                    .catch(error => console.error('Error:', error));
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
