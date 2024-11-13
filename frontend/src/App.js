@@ -27,7 +27,20 @@ function App() {
           </nav>
 
           <Routes>
-            <Route path="/" element={<h1 className="display-4">Welcome to Fruit Detection!</h1>} />
+            <Route path="/" element={
+              <>
+                <h1 className="display-4">Welcome to Fruit Detection!</h1>
+                <br></br>
+                <p className="lead">
+                  This application demonstrates fruit detection using advanced machine learning techniques. 
+                  You can upload images or use your camera to detect various types of fruits in real-time.
+                </p>
+                <br></br>
+                <h5>
+                  Choose "Image Detection" to upload and analyze images, or "Camera Detection" to use your device's camera for live fruit detection.
+                </h5>
+              </>
+            } />
             <Route path="/image-detection" element={<ImageDetection />} />
             <Route path="/camera-detection" element={<CameraDetection />} />
           </Routes>
