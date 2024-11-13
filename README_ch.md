@@ -27,8 +27,8 @@
 
 ### 技术架构 
 - 🌐 前端技术栈 
-	- 基于React + TypeScript构建，确保代码类型安全 
-	- 使用TailwindCSS实现响应式设计 
+	- 基于React + JavaScript构建，确保代码类型安全 
+	- 使用BootstrapCSS实现响应式设计 
 	- 实时摄像头画面捕捉和显示 
 - 🛠️ 后端技术栈 
 	- 基于Python + Flask构建RESTful API 
