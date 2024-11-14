@@ -51,7 +51,7 @@ git clone https://github.com/Beichen-Hg/CV-project.git
 cd CV-project
 ```
 2. You need to download both the `frontend` and `backend` folders and **place them in the same root directory**, otherwise the frontend code will not execute properly!
-3. You **must** additionally download the files from the `master` branch repositorie and place the `CameraDetection` folder under the `backend` folder.
+3. ❗You **must** additionally download the files from the `master` branch repositorie and place the `CameraDetection` folder under the `backend` folder.
 4. Furthermore, you **must** create a folder named `uploads` in both the project root directory and the `backend` directory to temporarily store uploaded images!
 
 The first three levels of the directory structure should look like the following (the "node_modules" folder will be generated in the environment setup section):
