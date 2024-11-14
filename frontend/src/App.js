@@ -10,10 +10,10 @@ function App() {
   return (
     <Router>
       <div className="min-vh-100 bg-light">
-        <Header />
-        <div className="container py-4">
+        <Header /> {/* Page header component */}
+        <div className="container py-4"> {/* Bootstrap container, top and bottom padding 4 units */}
           <nav className="mb-4">
-            <ul className="nav nav-pills">
+            <ul className="nav nav-pills"> {/* Bootstrap pills navigation bar */}
               <li className="nav-item">
                 <Link to="/" className="nav-link">Home</Link>
               </li>
@@ -26,7 +26,8 @@ function App() {
             </ul>
           </nav>
 
-          <Routes>
+          {/* Route config */}
+          <Routes> 
             <Route path="/" element={
               <>
                 <h1 className="display-4">Welcome to Fruit Detection!</h1>
@@ -41,7 +42,9 @@ function App() {
                 </h5>
               </>
             } />
+            {/* ImageDetection page route */}
             <Route path="/image-detection" element={<ImageDetection />} />
+            {/* CameraDetection page route */}
             <Route path="/camera-detection" element={<CameraDetection />} />
           </Routes>
         </div>
