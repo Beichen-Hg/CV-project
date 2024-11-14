@@ -1,5 +1,6 @@
 import React from 'react';
 
+// Page navigation component
 function Header() {
   return (
     <header className="bg-primary text-white shadow">
