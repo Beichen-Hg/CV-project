@@ -172,7 +172,7 @@ HTTP_500_INTERNAL_SERVER_ERROR = 500
    - Ensure no other application is using the camera
    
 2. **Model loading errors**
-   - Verify all model files are in the correct locations
+   - Verify all model files are in the correct locations (Check if the `CameraDetection` file of the `master` branch is downloaded)
    - Check if CUDA is properly installed (for GPU usage)
 
 3. **Frontend connection issues**
