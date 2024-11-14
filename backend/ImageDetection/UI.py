@@ -4,49 +4,108 @@ from PIL import Image, ImageTk
 from PIL.Image import Resampling
 import cv2
 
-# 导入外部功能模块
+# Import external function modules for detection and classification
 from pest_detection import detect_pests
 from fruit_classfy import classify_fruit
 
-# 创建主窗口
-root = tk.Tk()
-root.title("Fruit and Pest Detection")
+class FruitPestDetector:
+    def __init__(self):
+        # Initialize main window
+        self.root = tk.Tk()
+        self.root.title("Fruit and Pest Detection System")
+        
+        # Set window size and background color
+        self.root.geometry("800x600")
+        self.root.configure(bg='light blue')
+        
+        # Create and setup the main UI
+        self.setup_ui()
+        
+    def setup_ui(self):
+        """Setup all UI components"""
+        # Create main frame with white background and raised border
+        self.main_frame = tk.Frame(
+            self.root,
+            bg='white',
+            bd=2,
+            relief=tk.RAISED
+        )
+        self.main_frame.pack(
+            padx=10,
+            pady=10,
+            fill=tk.BOTH,
+            expand=True
+        )
+        
+        # Create image display panel
+        self.panel_image = tk.Label(self.main_frame)
+        self.panel_image.pack(pady=10)
+        
+        # Create result display label
+        self.label_result = tk.Label(
+            self.main_frame,
+            text="Please load an image to start detection",
+            font=('Arial', 14),
+            bg='white'
+        )
+        self.label_result.pack(pady=10)
+        
+        # Create load image button
+        self.btn_load = tk.Button(
+            self.main_frame,
+            text="Load Image",
+            command=self.load_image,
+            font=('Arial', 12),
+            bg='#4CAF50',  # Green color
+            fg='white',
+            padx=20,
+            pady=5
+        )
+        self.btn_load.pack(pady=10)
+        
+    def load_image(self):
+        """Handle image loading and processing"""
+        # Open file dialog to select image
+        file_path = filedialog.askopenfilename(
+            filetypes=[
+                ("Image files", "*.jpg *.jpeg *.png *.bmp *.gif *.tiff")
+            ]
+        )
+        
+        if file_path:
+            try:
+                # Load and resize image for display
+                img = Image.open(file_path)
+                img = img.resize((400, 400), Resampling.LANCZOS)
+                img_tk = ImageTk.PhotoImage(img)
+                
+                # Update image display
+                self.panel_image.config(image=img_tk)
+                self.panel_image.image = img_tk
+                
+                # Perform detection and classification
+                pest_result = detect_pests(file_path)
+                fruit_result = classify_fruit(file_path)
+                
+                # Update result display
+                result_text = f"Pest Detection: {pest_result}\nFruit Type: {fruit_result}"
+                self.label_result.config(
+                    text=result_text,
+                    fg='#333333'  # Dark gray text color
+                )
+                
+            except Exception as e:
+                # Handle potential errors
+                self.label_result.config(
+                    text=f"Error: {str(e)}",
+                    fg='red'
+                )
+    
+    def run(self):
+        """Start the application"""
+        self.root.mainloop()
 
-# 设置窗口大小和背景颜色
-root.geometry("800x600")
-root.configure(bg='light blue')  # 添加背景颜色
-
-# 加载和显示图片
-def load_image():
-    file_path = filedialog.askopenfilename()
-    if file_path:
-        img = Image.open(file_path)
-        img = img.resize((400, 400), Resampling.LANCZOS)
-        img_tk = ImageTk.PhotoImage(img)
-        panel_image.config(image=img_tk)
-        panel_image.image = img_tk
-        panel_image.pack()
-
-        pest_result = detect_pests(file_path)
-        fruit_result = classify_fruit(file_path)
-        result_text = f"{pest_result}\n{fruit_result}"
-        label_result.config(text=result_text)
-
-# 使用 Frame 组织布局
-frame = tk.Frame(root, bg='white', bd=2, relief=tk.RAISED)
-frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-
-# 图片面板
-panel_image = tk.Label(frame)
-panel_image.pack(pady=10)
-
-# 结果标签
-label_result = tk.Label(frame, text="Results will be shown here.", font=('Arial', 14), bg='white')
-label_result.pack(pady=10)
-
-# 按钮加载图片
-btn_load = tk.Button(frame, text="Load Image", command=load_image)
-btn_load.pack(pady=10)
-
-# 运行主循环
-root.mainloop()
+# Create and run the application
+if __name__ == "__main__":
+    app = FruitPestDetector()
+    app.run()
