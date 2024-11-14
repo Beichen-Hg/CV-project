@@ -18,9 +18,9 @@ from ImageDetection.pest_detection import detect_pests
 from ImageDetection.fruit_classfy import classify_fruit
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests
+CORS(app)  # Enable Cross-Origin Resource Sharing
 
-# Configure the storage path for uploaded files
+# Configure upload file storage path
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -36,6 +36,9 @@ preprocess = None
 fruits = ['apple', 'avocado', 'banana', 'cherry', 'kiwi', 'Mango', 'orange', 'pineapple', 'strawberry', 'watermelon']
 
 def init_camera_detection_models():
+    """
+    Initialize YOLO and ResNet models for object detection and classification
+    """
     global yolo_model, resnet_model, preprocess
     
     # Load YOLO model for object detection
@@ -60,15 +63,19 @@ def init_camera_detection_models():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-# Check if the uploaded file extension is in the allowed list
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 def process_frame(frame):
+    """
+    Process a single frame for object detection and classification
+    
+    Args:
+        frame: Input image frame
+    
+    Returns:
+        List of detection results containing bounding boxes, classes, and confidence scores
+    """
     detection_results = []
     
-    # Use YOLOv8 for detection
+    # Perform detection using YOLOv8
     results = yolo_model(frame, show=False)
     
     # Process detection results
@@ -78,17 +85,16 @@ def process_frame(frame):
             x1, y1, x2, y2 = box.xyxy[0]
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
             
-            # Crop and process the detected area
+            # Crop and process detected region
             crop_img = frame[y1:y2, x1:x2]
             crop_img = Image.fromarray(crop_img)
             input_tensor = preprocess(crop_img).unsqueeze(0)
             
-            # Use ResNet for classification
+            # Perform classification using ResNet
             with torch.no_grad():
                 output = resnet_model(input_tensor)
                 pred = torch.argmax(output, dim=1).item()
             
-            # Add detection result
             detection_results.append({
                 'bbox': [x1, y1, x2, y2],
                 'class': fruits[pred],
@@ -98,31 +104,38 @@ def process_frame(frame):
     return detection_results
 
 def gen_frames():
+    """
+    Generator function for video streaming
+    Yields processed frames with detection results drawn on them
+    """
     camera = cv2.VideoCapture(0)
     while True:
         success, frame = camera.read()
         if not success:
             break
-        else:
-            # Get detection results
-            detection_results = process_frame(frame)
-            
-            # Draw detection results on the image
-            for detection in detection_results:
-                x1, y1, x2, y2 = detection['bbox']
-                label = f"Fruit: {detection['class']}"
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, label, (x1, y1 - 10),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        
+        detection_results = process_frame(frame)
+        
+        # Draw detection results on frame
+        for detection in detection_results:
+            x1, y1, x2, y2 = detection['bbox']
+            label = f"Fruit: {detection['class']}"
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, label, (x1, y1 - 10),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-# API route for ImageDetection
+# API Routes
 @app.route('/api/image-detection', methods=['POST'])
 def image_detection():
+    """
+    API endpoint for image detection
+    Handles uploaded images for pest detection and fruit classification
+    """
     try:
         if 'image' not in request.files:
             return jsonify({'error': 'No image file'}), 400
@@ -132,22 +145,16 @@ def image_detection():
         if file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
         
-        if file and allowed_file(file.filename):
-            # Save file
+        if file and allowed_file(file.filename): # type: ignore
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
             
-            # Perform pest detection
             pest_result = detect_pests(filepath)
-            
-            # Perform fruit classification
             fruit_result = classify_fruit(filepath)
             
-            # Delete temporary file
             os.remove(filepath)
             
-            # Return results
             return jsonify({
                 'success': True,
                 'pest_detection': pest_result,
@@ -164,22 +171,41 @@ def image_detection():
 
 @app.route('/health', methods=['GET'])
 def health_check():
+    """
+    Health check endpoint to verify service status
+    """
     return jsonify({'status': 'healthy'}), 200
 
-# Camera detection route
+# Camera detection routes
 @app.route('/')
 def index():
+    """
+    Render main page template
+    """
     return render_template('index.html')
 
 @app.route('/video_feed')
 def video_feed():
+    """
+    Endpoint for streaming video feed
+    Returns a multipart response containing processed frames
+    """
     return Response(gen_frames(),
                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/camera-detection', methods=['POST'])
 def camera_detection():
+    """
+    Process frames from camera feed
+    
+    Expects:
+        JSON with base64 encoded image in 'frame' field
+    
+    Returns:
+        JSON with detection results
+    """
     try:
-        # Get base64 encoded image from the request
+        # Get base64 encoded image from request
         data = request.json
         image_data = data['frame'].split(',')[1]
         image_bytes = base64.b64decode(image_data)
@@ -188,7 +214,7 @@ def camera_detection():
         nparr = np.frombuffer(image_bytes, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
-        # Process the image and get detection results
+        # Process image and get detection results
         detection_results = process_frame(frame)
         
         return jsonify({
@@ -204,6 +230,15 @@ def camera_detection():
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
+    """
+    Process a single image and return the results with annotations
+    
+    Expects:
+        JSON with base64 encoded image in 'image' field
+    
+    Returns:
+        JSON with base64 encoded processed image
+    """
     try:
         # Get uploaded image data
         image_data = request.json['image']
@@ -218,7 +253,7 @@ def process_image():
         # Get detection results
         detection_results = process_frame(frame)
         
-        # Draw detection results on the image
+        # Draw detection results on frame
         for detection in detection_results:
             x1, y1, x2, y2 = detection['bbox']
             label = f"Fruit: {detection['class']}"
@@ -236,5 +271,6 @@ def process_image():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    init_camera_detection_models()  # Initialize camera detection models
+    # Initialize camera detection models before starting the server
+    init_camera_detection_models()
     app.run(debug=True, port=5000)
