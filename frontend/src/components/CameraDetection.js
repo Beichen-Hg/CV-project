@@ -7,6 +7,17 @@ function CameraDetection() {
   const [detectionResults, setDetectionResults] = useState([]);
   const [stream, setStream] = useState(null);
 
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.onloadedmetadata = () => {
+        if (canvasRef.current) {
+          canvasRef.current.width = videoRef.current.videoWidth;
+          canvasRef.current.height = videoRef.current.videoHeight;
+        }
+      };
+    }
+  }, []);
+
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -34,14 +45,14 @@ function CameraDetection() {
       const video = videoRef.current;
       const context = canvas.getContext('2d');
       
-      // 设置canvas尺寸与视频相同
+      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       
-      // 在canvas上绘制当前视频帧
+      // Draw current video frame on canvas
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
-      // 将canvas内容转换为base64
+      // Convert canvas content to base64
       return canvas.toDataURL('image/jpeg');
     }
     return null;
@@ -70,7 +81,7 @@ function CameraDetection() {
       }
     }
     
-    // 继续下一帧检测
+    // Continue with next frame detection
     requestAnimationFrame(performDetection);
   };
 
@@ -84,41 +95,67 @@ function CameraDetection() {
   }, [isDetecting]);
 
   const drawDetections = () => {
-    if (canvasRef.current && detectionResults.length > 0) {
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
-      // 清除之前的绘制
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // 绘制当前视频帧
-      context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      
-      // 绘制检测框和标签
-      detectionResults.forEach(detection => {
-        const [x1, y1, x2, y2] = detection.bbox;
-        const label = `${detection.class} (${(detection.confidence * 100).toFixed(1)}%)`;
-        
-        // 绘制边界框
-        context.strokeStyle = '#00ff00';
-        context.lineWidth = 2;
-        context.strokeRect(x1, y1, x2 - x1, y2 - y1);
-        
-        // 绘制标签背景
-        context.fillStyle = '#00ff00';
-        context.fillRect(x1, y1 - 20, context.measureText(label).width + 10, 20);
-        
-        // 绘制标签文字
-        context.fillStyle = '#000000';
-        context.font = '16px Arial';
-        context.fillText(label, x1 + 5, y1 - 5);
-      });
+    if (!canvasRef.current || !videoRef.current || !videoRef.current.videoWidth) {
+      return;
     }
+  
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    // Ensure canvas dimensions match video
+    if (canvas.width !== videoRef.current.videoWidth) {
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+    }
+    
+    // Clear previous drawings
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw current video frame
+    context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    // Draw detection boxes and labels
+    detectionResults.forEach(detection => {
+      const [x1, y1, x2, y2] = detection.bbox;
+      const label = `${detection.class} (${(detection.confidence * 100).toFixed(1)}%)`;
+      
+      // Draw bounding box
+      context.strokeStyle = '#00ff00';
+      context.lineWidth = 2;
+      context.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      
+      // Draw label background
+      context.fillStyle = 'rgba(0, 255, 0, 0.5)';
+      const textWidth = context.measureText(label).width;
+      context.fillRect(x1, y1 - 25, textWidth + 10, 20);
+      
+      // Draw label text
+      context.fillStyle = '#000000';
+      context.font = '14px Arial';
+      context.fillText(label, x1 + 5, y1 - 10);
+    });
   };
 
   useEffect(() => {
-    drawDetections();
-  }, [detectionResults]);
+    let animationFrameId;
+    
+    const updateCanvas = () => {
+      drawDetections();
+      if (isDetecting) {
+        animationFrameId = requestAnimationFrame(updateCanvas);
+      }
+    };
+    
+    if (isDetecting) {
+      updateCanvas();
+    }
+    
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isDetecting, detectionResults]);
 
   return (
     <div className="mb-4">
@@ -138,7 +175,7 @@ function CameraDetection() {
           ref={videoRef}
           autoPlay
           playsInline
-          style={{ display: 'none' }}
+          style={{ position: 'absolute', opacity: 0 }}
         />
         <canvas
           ref={canvasRef}
